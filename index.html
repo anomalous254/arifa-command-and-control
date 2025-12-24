@@ -336,41 +336,51 @@
       }
 
       async function sendPayload() {
-        let payload;
-        try {
-          payload = JSON.parse(editor.getValue());
-        } catch {
-          return alert("Invalid JSON");
-        }
+  let payload;
+  try {
+    payload = JSON.parse(editor.getValue());
+  } catch {
+    return alert("Invalid JSON");
+  }
 
-        try {
-          const res = await client.notify({ recipient, payload });
-          let statusText = "";
-          let color = "";
+  // Show loading state
+  sendBtn.disabled = true;
+  const originalText = sendBtn.textContent;
+  sendBtn.textContent = "Sending...";
 
-          if (res.message === "Sent") {
-            statusText = "Event sent ✅";
-            color = "var(--ok)";
-          } else if (res.message === "User offline, notification saved") {
-            statusText = "User offline, Event Queued ⏳";
-            color = "var(--accent)";
-          } else {
-            statusText = "Failed to send Event ❌";
-            color = "var(--bad)";
-          }
+  try {
+    const res = await client.notify({ recipient, payload });
+    let statusText = "";
+    let color = "";
 
-          const el = document.createElement("div");
-          el.className = "event";
-          el.style.borderLeftColor = color;
-          el.innerHTML = `<div class="timestamp">${new Date().toLocaleTimeString()} - ${statusText}</div>
-            <pre><code class="language-json">${JSON.stringify(payload, null, 2)}</code></pre>`;
-          events.prepend(el);
-          Prism.highlightAll();
-        } catch (err) {
-          console.error(err);
-          alert("Error sending notification");
-        }
-      }
+    if (res.message === "Sent") {
+      statusText = "Event sent ✅";
+      color = "var(--ok)";
+    } else if (res.message === "User offline, notification saved") {
+      statusText = "User offline, Event Queued ⏳";
+      color = "var(--accent)";
+    } else {
+      statusText = "Failed to send Event ❌";
+      color = "var(--bad)";
+    }
+
+    const el = document.createElement("div");
+    el.className = "event";
+    el.style.borderLeftColor = color;
+    el.innerHTML = `<div class="timestamp">${new Date().toLocaleTimeString()} - ${statusText}</div>
+      <pre><code class="language-json">${JSON.stringify(payload, null, 2)}</code></pre>`;
+    events.prepend(el);
+    Prism.highlightAll();
+  } catch (err) {
+    console.error(err);
+    alert("Error sending notification");
+  } finally {
+    // Restore button state
+    sendBtn.disabled = false;
+    sendBtn.textContent = originalText;
+  }
+}
+
 
       function renderEvent(evt) {
         const el = document.createElement("div");
