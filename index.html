@@ -21,6 +21,7 @@
     />
 
     <!-- Prism for events -->
+     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css"
@@ -37,49 +38,56 @@
         --text: #e5e7eb;
         --muted: #9ca3af;
       }
+
       * {
         box-sizing: border-box;
       }
+
       body {
         margin: 0;
         padding: 0;
-        height: 100vh;
         font-family: Inter, sans-serif;
-        font-size: 11px;
-        display: flex;
-        flex-direction: column;
         background: var(--bg);
         color: var(--text);
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
         overflow: hidden;
+        font-size: 12px;
       }
 
       /* HEADER */
       header {
         display: flex;
+        flex-wrap: wrap;
         gap: 8px;
         padding: 10px;
         background: var(--panel);
         align-items: center;
         border-bottom: 1px solid #222;
       }
+
       header input {
         flex: 1;
-        background: #020617;
-        border: 1px solid #374151;
-        color: var(--text);
+        min-width: 100px;
         padding: 6px;
         border-radius: 6px;
+        border: 1px solid #374151;
+        background: #020617;
+        color: var(--text);
         font-family: JetBrains Mono;
-        font-size: 11px;
       }
+
       header button {
         padding: 6px 14px;
-        background: var(--accent);
         border: none;
         border-radius: 6px;
+        background: var(--accent);
+        color: var(--text);
         cursor: pointer;
         font-weight: 500;
       }
+
       .status {
         display: flex;
         align-items: center;
@@ -87,31 +95,36 @@
         font-family: JetBrains Mono;
         margin-left: auto;
       }
+
       .dot {
         width: 10px;
         height: 10px;
         border-radius: 50%;
         background: var(--bad);
       }
+
       .connected .dot {
         background: var(--ok);
       }
 
-      /* MAIN */
+      /* APP */
       .app {
         flex: 1;
         display: flex;
         overflow: hidden;
       }
+
       .left,
       .right {
         padding: 12px;
         overflow-y: auto;
       }
+
       .left {
         width: 420px;
         background: var(--panel);
       }
+
       .right {
         flex: 1;
         background: var(--panel);
@@ -126,6 +139,7 @@
         flex-direction: column;
         gap: 8px;
       }
+
       .CodeMirror {
         height: 220px;
         border-radius: 6px;
@@ -139,6 +153,7 @@
         flex-direction: column;
         gap: 10px;
       }
+
       .event {
         background: #020617;
         border-left: 4px solid var(--accent);
@@ -146,14 +161,11 @@
         padding: 8px;
         font-family: JetBrains Mono;
       }
+
       .timestamp {
         font-size: 10px;
         color: var(--muted);
         margin-bottom: 4px;
-      }
-      pre {
-        margin: 0;
-        background: none !important;
       }
 
       button.send {
@@ -164,69 +176,77 @@
         padding: 6px;
         cursor: pointer;
       }
+
       button[disabled] {
         opacity: 0.5;
         cursor: not-allowed;
       }
-      /* RESPONSIVE LAYOUT */
-@media (max-width: 900px) {
-  .app {
-    flex-direction: column;
-  }
 
-  .left,
-  .right {
-    width: 100% !important;
-    max-height: 50vh;
-    padding: 8px;
-  }
+      /* RESPONSIVE */
 
-  .CodeMirror {
-    height: 150px;
-  }
+      /* Medium screens */
+      @media (max-width: 900px) {
+        .app {
+          flex-direction: column;
+        }
 
-  header {
-    flex-direction: column;
-    gap: 6px;
-    align-items: stretch;
-  }
+        .left,
+        .right {
+          width: 100% !important;
+          max-height: none;
+          padding: 8px;
+        }
 
-  header input,
-  header button {
-    width: 100%;
-    font-size: 12px;
-  }
+        .CodeMirror {
+          height: 180px;
+        }
 
-  .status {
-    margin-left: 0;
-    justify-content: flex-start;
-  }
-}
+        header input,
+        header button {
+          width: 100%;
+        }
 
-@media (max-width: 500px) {
-  body {
-    font-size: 10px;
-  }
+        .status {
+          margin-left: 0;
+          justify-content: flex-start;
+        }
+      }
 
-  .CodeMirror {
-    font-size: 10px;
-  }
+      /* Small phones */
+      @media (max-width: 500px) {
+        body {
+          font-size: 10px;
+        }
 
-  header input,
-  header button {
-    font-size: 10px;
-  }
+        .CodeMirror {
+          font-size: 10px;
+          height: 140px;
+        }
 
-  .event {
-    font-size: 10px;
-    padding: 6px;
-  }
+        header input,
+        header button {
+          font-size: 10px;
+        }
 
-  .timestamp {
-    font-size: 9px;
-  }
-}
+        .event {
+          font-size: 10px;
+          padding: 6px;
+        }
 
+        .timestamp {
+          font-size: 9px;
+        }
+
+        .panel {
+          padding: 8px;
+          gap: 6px;
+        }
+
+        .left,
+        .right {
+          padding: 6px;
+        }
+      }
     </style>
   </head>
   <body>
@@ -328,7 +348,6 @@
           let statusText = "";
           let color = "";
 
-          // Determine status
           if (res.message === "Sent") {
             statusText = "Event sent ✅";
             color = "var(--ok)";
@@ -340,16 +359,11 @@
             color = "var(--bad)";
           }
 
-          // Display in events panel
           const el = document.createElement("div");
           el.className = "event";
           el.style.borderLeftColor = color;
           el.innerHTML = `<div class="timestamp">${new Date().toLocaleTimeString()} - ${statusText}</div>
-            <pre><code class="language-json">${JSON.stringify(
-              payload,
-              null,
-              2
-            )}</code></pre>`;
+            <pre><code class="language-json">${JSON.stringify(payload, null, 2)}</code></pre>`;
           events.prepend(el);
           Prism.highlightAll();
         } catch (err) {
@@ -362,13 +376,9 @@
         const el = document.createElement("div");
         el.className = "event";
 
-        // Meaningful one-line server response
         const serverResponse = `[${new Date().toLocaleTimeString()}] ✅ Event processed successfully`;
 
-        el.innerHTML = `
-    <pre><code class="language-json">[OK] Server ${serverResponse}</code></pre>
-  `;
-
+        el.innerHTML = `<pre><code class="language-json">[OK] Server ${serverResponse}</code></pre>`;
         events.prepend(el);
         Prism.highlightAll();
       }
