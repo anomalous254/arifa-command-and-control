@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>ARIFA · Command & Control</title>
+
+    <!-- Fonts -->
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- CodeMirror -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/material-darker.min.css"
+    />
+
+    <!-- Prism for events -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css"
+    />
+
+    <style>
+      :root {
+        --bg: #0b0f14;
+        --panel: #111827;
+        --panel2: #1f2937;
+        --accent: #22d3ee;
+        --ok: #22c55e;
+        --bad: #ef4444;
+        --text: #e5e7eb;
+        --muted: #9ca3af;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        padding: 0;
+        height: 100vh;
+        font-family: Inter, sans-serif;
+        font-size: 11px;
+        display: flex;
+        flex-direction: column;
+        background: var(--bg);
+        color: var(--text);
+        overflow: hidden;
+      }
+
+      /* HEADER */
+      header {
+        display: flex;
+        gap: 8px;
+        padding: 10px;
+        background: var(--panel);
+        align-items: center;
+        border-bottom: 1px solid #222;
+      }
+      header input {
+        flex: 1;
+        background: #020617;
+        border: 1px solid #374151;
+        color: var(--text);
+        padding: 6px;
+        border-radius: 6px;
+        font-family: JetBrains Mono;
+        font-size: 11px;
+      }
+      header button {
+        padding: 6px 14px;
+        background: var(--accent);
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: 500;
+      }
+      .status {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-family: JetBrains Mono;
+        margin-left: auto;
+      }
+      .dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: var(--bad);
+      }
+      .connected .dot {
+        background: var(--ok);
+      }
+
+      /* MAIN */
+      .app {
+        flex: 1;
+        display: flex;
+        overflow: hidden;
+      }
+      .left,
+      .right {
+        padding: 12px;
+        overflow-y: auto;
+      }
+      .left {
+        width: 420px;
+        background: var(--panel);
+      }
+      .right {
+        flex: 1;
+        background: var(--panel);
+      }
+
+      /* PANELS */
+      .panel {
+        background: var(--panel2);
+        border-radius: 10px;
+        padding: 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .CodeMirror {
+        height: 220px;
+        border-radius: 6px;
+        font-family: JetBrains Mono;
+        font-size: 11px;
+      }
+
+      /* EVENTS */
+      .events {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .event {
+        background: #020617;
+        border-left: 4px solid var(--accent);
+        border-radius: 6px;
+        padding: 8px;
+        font-family: JetBrains Mono;
+      }
+      .timestamp {
+        font-size: 10px;
+        color: var(--muted);
+        margin-bottom: 4px;
+      }
+      pre {
+        margin: 0;
+        background: none !important;
+      }
+
+      button.send {
+        margin-top: 6px;
+        background: var(--accent);
+        border: none;
+        border-radius: 6px;
+        padding: 6px;
+        cursor: pointer;
+      }
+      button[disabled] {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <input id="apiKey" placeholder="API Key" />
+      <input id="clientName" placeholder="Client (web / mobile)" />
+      <input id="recipientId" placeholder="Recipient UUID" />
+      <button onclick="subscribe()">Connect</button>
+      <div id="status" class="status">
+        <span class="dot"></span>
+        <span id="statusText">DISCONNECTED</span>
+      </div>
+    </header>
+
+    <div class="app">
+      <div class="left">
+        <div class="panel">
+          <strong>Send JSON Payload</strong>
+          <div id="editor"></div>
+          <button class="send" id="sendBtn" onclick="sendPayload()" disabled>
+            Send
+          </button>
+        </div>
+      </div>
+
+      <div class="right">
+        <p>Events</p>
+        <br />
+        <div id="events" class="events"></div>
+      </div>
+    </div>
+
+    <!-- LIBS -->
+    <script src="https://unpkg.com/arifa-client@1.0.11/dist/arifa-client.iife.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/javascript/javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-json.min.js"></script>
+
+    <script>
+      let client = null,
+        sub = null,
+        recipient = null;
+      const statusEl = document.getElementById("status");
+      const statusText = document.getElementById("statusText");
+      const sendBtn = document.getElementById("sendBtn");
+      const events = document.getElementById("events");
+
+      /* JSON EDITOR */
+      const editor = CodeMirror(document.getElementById("editor"), {
+        mode: { name: "javascript", json: true },
+        theme: "material-darker",
+        lineNumbers: true,
+        tabSize: 2,
+        value: `{
+  "deviceId": "sensor-042",
+  "type": "temperature",
+  "value": 23.7,
+  "unit": "°C",
+  "battery": 87,
+  "timestamp": "${new Date().toISOString()}"
+}`,
+      });
+
+      function setStatus(connected) {
+        statusEl.classList.toggle("connected", connected);
+        statusText.textContent = connected ? "CONNECTED" : "DISCONNECTED";
+        sendBtn.disabled = !connected;
+      }
+
+      function subscribe() {
+        const apiKey = document.getElementById("apiKey").value.trim();
+        const clientName = document.getElementById("clientName").value.trim();
+        recipient = document.getElementById("recipientId").value.trim();
+        if (!apiKey || !clientName || !recipient) {
+          alert("API Key, Client, Recipient required");
+          return;
+        }
+        if (client) client.disconnect();
+        if (sub) sub.unsubscribe();
+
+        client = new ArifaClient({ apiKey, client: clientName });
+        client.onConnectionChange((state) => setStatus(state === "connected"));
+
+        sub = client.subscribe(recipient);
+        sub.listen(renderEvent);
+      }
+
+      async function sendPayload() {
+        let payload;
+        try {
+          payload = JSON.parse(editor.getValue());
+        } catch {
+          return alert("Invalid JSON");
+        }
+
+        try {
+          const res = await client.notify({ recipient, payload });
+          let statusText = "";
+          let color = "";
+
+          // Determine status
+          if (res.message === "Sent") {
+            statusText = "Notification sent ✅";
+            color = "var(--ok)";
+          } else if (res.message === "User offline, notification saved") {
+            statusText = "User offline, notification saved ⏳";
+            color = "var(--accent)";
+          } else {
+            statusText = "Failed to send notification ❌";
+            color = "var(--bad)";
+          }
+
+          // Display in events panel
+          const el = document.createElement("div");
+          el.className = "event";
+          el.style.borderLeftColor = color;
+          el.innerHTML = `<div class="timestamp">${new Date().toLocaleTimeString()} - ${statusText}</div>
+            <pre><code class="language-json">${JSON.stringify(
+              payload,
+              null,
+              2
+            )}</code></pre>`;
+          events.prepend(el);
+          Prism.highlightAll();
+        } catch (err) {
+          console.error(err);
+          alert("Error sending notification");
+        }
+      }
+
+      function renderEvent(evt) {
+        const el = document.createElement("div");
+        el.className = "event";
+
+        // Meaningful one-line server response
+        const serverResponse = `[${new Date().toLocaleTimeString()}] ✅ Event processed successfully`;
+
+        el.innerHTML = `
+    <pre><code class="language-json">[OK] Server ${serverResponse}</code></pre>
+  `;
+
+        events.prepend(el);
+        Prism.highlightAll();
+      }
+    </script>
+  </body>
+</html>
