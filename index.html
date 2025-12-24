@@ -168,6 +168,65 @@
         opacity: 0.5;
         cursor: not-allowed;
       }
+      /* RESPONSIVE LAYOUT */
+@media (max-width: 900px) {
+  .app {
+    flex-direction: column;
+  }
+
+  .left,
+  .right {
+    width: 100% !important;
+    max-height: 50vh;
+    padding: 8px;
+  }
+
+  .CodeMirror {
+    height: 150px;
+  }
+
+  header {
+    flex-direction: column;
+    gap: 6px;
+    align-items: stretch;
+  }
+
+  header input,
+  header button {
+    width: 100%;
+    font-size: 12px;
+  }
+
+  .status {
+    margin-left: 0;
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 500px) {
+  body {
+    font-size: 10px;
+  }
+
+  .CodeMirror {
+    font-size: 10px;
+  }
+
+  header input,
+  header button {
+    font-size: 10px;
+  }
+
+  .event {
+    font-size: 10px;
+    padding: 6px;
+  }
+
+  .timestamp {
+    font-size: 9px;
+  }
+}
+
     </style>
   </head>
   <body>
@@ -271,13 +330,13 @@
 
           // Determine status
           if (res.message === "Sent") {
-            statusText = "Notification sent ✅";
+            statusText = "Event sent ✅";
             color = "var(--ok)";
           } else if (res.message === "User offline, notification saved") {
-            statusText = "User offline, notification saved ⏳";
+            statusText = "User offline, Event Queued ⏳";
             color = "var(--accent)";
           } else {
-            statusText = "Failed to send notification ❌";
+            statusText = "Failed to send Event ❌";
             color = "var(--bad)";
           }
 
